@@ -37,6 +37,9 @@ builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Add controllers (migrate minimal endpoints to controllers)
+builder.Services.AddControllers();
+
 var app = builder.Build();
 
 // Enable CORS - add this before other middleware
@@ -55,44 +58,7 @@ if (app.Environment.IsDevelopment())
 
 // app.UseHttpsRedirection();
 
-// Products endpoints
-app.MapGet("/api/products", async (ISupabaseService supabase) =>
-{
-    try
-    {
-        var products = await supabase.GetProductsAsync();
-        return Results.Ok(products);
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem(
-            title: "Failed to fetch products",
-            detail: ex.Message,
-            statusCode: 500);
-    }
-})
-.WithName("GetProducts")
-.WithOpenApi();
-
-app.MapGet("/api/products/{id}", async (long id, ISupabaseService supabase) =>
-{
-    try
-    {
-        var product = await supabase.GetProductByIdAsync(id);
-        if (product == null)
-            return Results.NotFound();
-            
-        return Results.Ok(product);
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem(
-            title: "Failed to fetch product",
-            detail: ex.Message,
-            statusCode: 500);
-    }
-})
-.WithName("GetProductById")
-.WithOpenApi();
+// Map controllers (ProductController handles /api/products)
+app.MapControllers();
 
 app.Run();
