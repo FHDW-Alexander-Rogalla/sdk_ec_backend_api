@@ -1,3 +1,6 @@
+using Sdk_EC_Backend.Configuration;
+using Sdk_EC_Backend.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add CORS policy
@@ -12,11 +15,25 @@ builder.Services.AddCors(options =>
         });
 });
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// Configure Supabase
+builder.Services.Configure<SupabaseSettings>(
+    builder.Configuration.GetSection(SupabaseSettings.SectionName));
+// If the Key is not present in configuration, allow providing it via environment variable SUPABASE_KEY
+builder.Services.PostConfigure<SupabaseSettings>(opts =>
+{
+    if (string.IsNullOrWhiteSpace(opts.Key))
+    {
+        var envKey = Environment.GetEnvironmentVariable("SUPABASE_KEY");
+        if (!string.IsNullOrWhiteSpace(envKey))
+        {
+            opts.Key = envKey;
+        }
+    }
+});
+builder.Services.AddScoped<ISupabaseService, SupabaseService>();
 
-// Register Swagger (Swashbuckle) for Swagger UI
+// Add services to the container.
+builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -38,28 +55,44 @@ if (app.Environment.IsDevelopment())
 
 // app.UseHttpsRedirection();
 
-var summaries = new[]
+// Products endpoints
+app.MapGet("/api/products", async (ISupabaseService supabase) =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
+    try
+    {
+        var products = await supabase.GetProductsAsync();
+        return Results.Ok(products);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(
+            title: "Failed to fetch products",
+            detail: ex.Message,
+            statusCode: 500);
+    }
 })
-.WithName("GetWeatherForecast");
+.WithName("GetProducts")
+.WithOpenApi();
+
+app.MapGet("/api/products/{id}", async (long id, ISupabaseService supabase) =>
+{
+    try
+    {
+        var product = await supabase.GetProductByIdAsync(id);
+        if (product == null)
+            return Results.NotFound();
+            
+        return Results.Ok(product);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(
+            title: "Failed to fetch product",
+            detail: ex.Message,
+            statusCode: 500);
+    }
+})
+.WithName("GetProductById")
+.WithOpenApi();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
