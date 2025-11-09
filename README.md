@@ -10,7 +10,29 @@ Backend API for the E-Commerce Software Development Kit project, built with .NET
 
 ## Quick Start
 
-The Supabase database credentials are already configured in `appsettings.Development.json`, so no additional setup is required.
+The Supabase database credentials are already configured in `appsettings.Development.json`.
+
+### ⚠️ Important: JWT Secret Configuration
+
+To enable authentication, you **must** configure the Supabase JWT Secret:
+
+1. **Get your JWT Secret from Supabase Dashboard:**
+   - Go to https://supabase.com/dashboard/project/YOUR_PROJECT_ID/settings/api
+   - Copy the **JWT Secret** (not the anon key!)
+
+2. **Set the JWT Secret in `appsettings.Development.json`:**
+   ```json
+   "Supabase": {
+     "JwtSecret": "YOUR_ACTUAL_JWT_SECRET_HERE"
+   }
+   ```
+
+   **OR** set it as an environment variable:
+   ```powershell
+   $env:SUPABASE_JWT_SECRET="your-actual-jwt-secret"
+   ```
+
+Without this configuration, authenticated endpoints (like `/api/cart`) will not work!
 
 ### Option 1: Docker (Recommended)
 
@@ -106,11 +128,36 @@ The API provides automatically generated Swagger documentation in development mo
 
 ### Available Endpoints
 
-- `GET /api/products` - List all products
-- `GET /api/products/{id}` - Get a single product
-- `POST /api/products` - Create a new product
-- `PUT /api/products/{id}` - Update a product
-- `DELETE /api/products/{id}` - Delete a product
+#### Public Endpoints (No Authentication Required)
+- `GET /api/product` - List all products
+- `GET /api/product/{id}` - Get a single product
+
+#### Protected Endpoints (Requires JWT Token)
+- `GET /api/cart` - Get current user's cart
+- `GET /api/cart/items` - Get all items in user's cart
+- `POST /api/cart/items` - Add item to cart
+  ```json
+  {
+    "productId": 1,
+    "quantity": 2
+  }
+  ```
+- `PUT /api/cart/items/{id}` - Update cart item quantity
+  ```json
+  {
+    "quantity": 3
+  }
+  ```
+- `DELETE /api/cart/items/{id}` - Remove item from cart
+
+#### Authentication Headers
+
+For protected endpoints, include the JWT token in the Authorization header:
+```
+Authorization: Bearer YOUR_SUPABASE_ACCESS_TOKEN
+```
+
+Your Angular frontend already handles this automatically via the `ApiService.getHeaders()` method.
 
 ---
 
