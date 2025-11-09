@@ -3,13 +3,24 @@ using Sdk_EC_Backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure URLs based on USE_HTTPS environment variable
+var useHttps = Environment.GetEnvironmentVariable("USE_HTTPS")?.ToLower() == "true";
+if (useHttps)
+{
+    builder.WebHost.UseUrls("https://+:7129", "http://+:5139");
+}
+else
+{
+    builder.WebHost.UseUrls("http://+:5139");
+}
+
 // Add CORS policy
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularDev",
         policy =>
         {
-            policy.WithOrigins("http://localhost:4200")
+            policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
@@ -43,6 +54,7 @@ builder.Services.AddControllers();
 var app = builder.Build();
 
 // Enable CORS - add this before other middleware
+app.UseRouting();  
 app.UseCors("AllowAngularDev");
 
 // Configure the HTTP request pipeline.
@@ -56,7 +68,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// app.UseHttpsRedirection();
+app.UseHttpsRedirection();
 
 // Map controllers (ProductController handles /api/products)
 app.MapControllers();
