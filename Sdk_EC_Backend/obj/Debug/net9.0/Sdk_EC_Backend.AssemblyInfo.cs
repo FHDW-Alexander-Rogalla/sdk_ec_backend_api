@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Sdk_EC_Backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7870c5c7fc86cf22e08ce262933919f7c8b9efbe")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fefef2ba821b3849aebba4ba3d9574959a870f56")]
 [assembly: System.Reflection.AssemblyProductAttribute("Sdk_EC_Backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Sdk_EC_Backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

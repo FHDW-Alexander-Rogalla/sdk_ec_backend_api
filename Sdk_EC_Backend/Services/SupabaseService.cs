@@ -52,9 +52,7 @@ public class SupabaseService : ISupabaseService
             Name = p.Name,
             Description = p.Description,
             Price = p.Price,
-            StockQuantity = p.StockQuantity,
             ImageUrl = p.ImageUrl,
-            Category = p.Category,
             CreatedAt = p.CreatedAt,
             UpdatedAt = p.UpdatedAt
         });
@@ -78,9 +76,7 @@ public class SupabaseService : ISupabaseService
             Name = product.Name,
             Description = product.Description,
             Price = product.Price,
-            StockQuantity = product.StockQuantity,
             ImageUrl = product.ImageUrl,
-            Category = product.Category,
             CreatedAt = product.CreatedAt,
             UpdatedAt = product.UpdatedAt
         };
