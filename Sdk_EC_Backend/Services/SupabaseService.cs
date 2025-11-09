@@ -10,15 +10,9 @@ using SupabaseClient = Supabase.Client;
 
 namespace Sdk_EC_Backend.Services;
 
-public interface ISupabaseService
+public class SupabaseService
 {
-    Task<IEnumerable<ProductDto>> GetProductsAsync();
-    Task<ProductDto?> GetProductByIdAsync(long id);
-}
-
-public class SupabaseService : ISupabaseService
-{
-    private readonly SupabaseClient _client;
+    public SupabaseClient Client { get; }
 
     public SupabaseService(IOptions<SupabaseSettings> settings)
     {
@@ -34,51 +28,51 @@ public class SupabaseService : ISupabaseService
             AutoConnectRealtime = false
         };
 
-        _client = new SupabaseClient(url, key, options);
+        Client = new SupabaseClient(url, key, options);
 
         // Initialize client synchronously in ctor (safe for short init). If this blocks too long, consider lazy initialization.
-        _client.InitializeAsync().GetAwaiter().GetResult();
+        Client.InitializeAsync().GetAwaiter().GetResult();
     }
 
-    public async Task<IEnumerable<ProductDto>> GetProductsAsync()
-    {
-        var response = await _client.From<Product>().Get();
-        var products = response.Models;
+    // public async Task<IEnumerable<ProductDto>> GetProductsAsync()
+    // {
+    //     var response = await _client.From<Product>().Get();
+    //     var products = response.Models;
 
-        // Map to DTOs to avoid serializing Postgrest metadata/attributes
-        var dtos = products.Select(p => new ProductDto
-        {
-            Id = p.Id,
-            Name = p.Name,
-            Description = p.Description,
-            Price = p.Price,
-            ImageUrl = p.ImageUrl,
-            CreatedAt = p.CreatedAt,
-            UpdatedAt = p.UpdatedAt
-        });
+    //     // Map to DTOs to avoid serializing Postgrest metadata/attributes
+    //     var dtos = products.Select(p => new ProductDto
+    //     {
+    //         Id = p.Id,
+    //         Name = p.Name,
+    //         Description = p.Description,
+    //         Price = p.Price,
+    //         ImageUrl = p.ImageUrl,
+    //         CreatedAt = p.CreatedAt,
+    //         UpdatedAt = p.UpdatedAt
+    //     });
 
-        return dtos;
-    }
+    //     return dtos;
+    // }
 
-    public async Task<ProductDto?> GetProductByIdAsync(long id)
-    {
-        var response = await _client.From<Product>()
-                                   .Filter("id", Constants.Operator.Equals, id.ToString())
-                                   .Get();
+    // public async Task<ProductDto?> GetProductByIdAsync(long id)
+    // {
+    //     var response = await _client.From<Product>()
+    //                                .Filter("id", Constants.Operator.Equals, id.ToString())
+    //                                .Get();
 
-        var product = response.Models.FirstOrDefault();
-        if (product == null)
-            return null;
+    //     var product = response.Models.FirstOrDefault();
+    //     if (product == null)
+    //         return null;
 
-        return new ProductDto
-        {
-            Id = product.Id,
-            Name = product.Name,
-            Description = product.Description,
-            Price = product.Price,
-            ImageUrl = product.ImageUrl,
-            CreatedAt = product.CreatedAt,
-            UpdatedAt = product.UpdatedAt
-        };
-    }
+    //     return new ProductDto
+    //     {
+    //         Id = product.Id,
+    //         Name = product.Name,
+    //         Description = product.Description,
+    //         Price = product.Price,
+    //         ImageUrl = product.ImageUrl,
+    //         CreatedAt = product.CreatedAt,
+    //         UpdatedAt = product.UpdatedAt
+    //     };
+    // }
 }

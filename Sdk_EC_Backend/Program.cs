@@ -41,7 +41,15 @@ builder.Services.PostConfigure<SupabaseSettings>(opts =>
         }
     }
 });
-builder.Services.AddScoped<ISupabaseService, SupabaseService>();
+
+builder.Services.AddScoped<SupabaseService>();
+// builder.Services.AddScoped<ISupabaseService, SupabaseService>();
+// SupabaseService removed; register raw Supabase client instead.
+// builder.Services.AddSingleton<Supabase.Client>(sp => {
+//     var cfg = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<SupabaseSettings>>().Value;
+//     var options = new Supabase.SupabaseOptions { AutoRefreshToken = false, AutoConnectRealtime = false };
+//     return new Supabase.Client(cfg.Url, cfg.Key, options);
+// });
 
 // Add services to the container.
 builder.Services.AddOpenApi();

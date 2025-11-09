@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Sdk_EC_Backend.Models.Dtos;
+using Sdk_EC_Backend.Models;
 using Sdk_EC_Backend.Services;
+using Postgrest;
 
 namespace Sdk_EC_Backend.Controllers;
 
@@ -8,11 +10,11 @@ namespace Sdk_EC_Backend.Controllers;
 [Route("api/[controller]")]
 public class ProductController : ControllerBase
 {
-    private readonly ISupabaseService _supabase;
+    private readonly SupabaseService _supabaseService;
 
-    public ProductController(ISupabaseService supabase)
+    public ProductController(SupabaseService supabaseService)
     {
-        _supabase = supabase;
+        _supabaseService = supabaseService;
     }
 
     [HttpGet]
@@ -20,12 +22,23 @@ public class ProductController : ControllerBase
     {
         try
         {
-            var products = await _supabase.GetProductsAsync();
-            return Ok(products);
+            var response = await _supabaseService.Client.From<Product>().Get();
+            var dtos = response.Models.Select(p => new ProductDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Price = p.Price,
+                ImageUrl = p.ImageUrl,
+                // StockQuantity = p.StockQuantity,
+                // Category = p.Category,
+                CreatedAt = p.CreatedAt,
+                UpdatedAt = p.UpdatedAt
+            });
+            return Ok(dtos);
         }
         catch (Exception ex)
         {
-            // Let centralized middleware or framework handle logging; return Problem for now.
             return Problem(title: "Failed to fetch products", detail: ex.Message, statusCode: 500);
         }
     }
@@ -35,11 +48,26 @@ public class ProductController : ControllerBase
     {
         try
         {
-            var product = await _supabase.GetProductByIdAsync(id);
+            var response = await _supabaseService.Client.From<Product>()
+                                       .Filter("id", Constants.Operator.Equals, id.ToString())
+                                       .Get();
+            var product = response.Models.FirstOrDefault();
             if (product == null)
                 return NotFound();
 
-            return Ok(product);
+            var dto = new ProductDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                ImageUrl = product.ImageUrl,
+                // StockQuantity = product.StockQuantity,
+                // Category = product.Category,
+                CreatedAt = product.CreatedAt,
+                UpdatedAt = product.UpdatedAt
+            };
+            return Ok(dto);
         }
         catch (Exception ex)
         {
