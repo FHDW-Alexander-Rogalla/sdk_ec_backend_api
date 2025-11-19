@@ -2,39 +2,13 @@
 
 Backend API for the E-Commerce Software Development Kit project, built with .NET 9.0 and ASP.NET Core.
 
-## Prerequisites
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop) (recommended)
-- **OR** [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-- Optional: PowerShell (for Windows users)
 
-## Quick Start
 
-The Supabase database credentials are already configured in `appsettings.Development.json`.
+### IMPORTANT
+Depending on the HTTP/HTTPS-mode, the routes have to be configured in the frontend in file:
+sdk_ec_frontend\ec_frontend\src\environments\environment.ts
 
-### ⚠️ Important: JWT Secret Configuration
-
-To enable authentication, you **must** configure the Supabase JWT Secret:
-
-1. **Get your JWT Secret from Supabase Dashboard:**
-   - Go to https://supabase.com/dashboard/project/YOUR_PROJECT_ID/settings/api
-   - Copy the **JWT Secret** (not the anon key!)
-
-2. **Set the JWT Secret in `appsettings.Development.json`:**
-   ```json
-   "Supabase": {
-     "JwtSecret": "YOUR_ACTUAL_JWT_SECRET_HERE"
-   }
-   ```
-
-   **OR** set it as an environment variable:
-   ```powershell
-   $env:SUPABASE_JWT_SECRET="your-actual-jwt-secret"
-   ```
-
-Without this configuration, authenticated endpoints (like `/api/cart`) will not work!
-
-### Option 1: Docker (Recommended)
 
 #### HTTP Mode (Default)
 
