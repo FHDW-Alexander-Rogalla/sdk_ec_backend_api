@@ -6,6 +6,9 @@ public class SupabaseSettings
 
     // Preferred for PostgREST / supabase client usage
     public string Url { get; set; } = string.Empty;
+    
+    // Service Role Key for backend operations (bypasses RLS)
+    // Get from: Supabase Dashboard > Settings > API > service_role key
     public string Key { get; set; } = string.Empty;
 
     // JWT secret for validating Supabase access tokens (from Supabase Dashboard > Settings > API > JWT Secret)
