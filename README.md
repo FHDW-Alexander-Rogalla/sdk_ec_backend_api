@@ -1,12 +1,11 @@
 # SDK EC Backend API
-
 Backend API for the E-Commerce Software Development Kit project, built with .NET 9.0 and ASP.NET Core.
 
 
 
 
 ### IMPORTANT
-Depending on the HTTP/HTTPS-mode, the routes have to be configured in the frontend in file:
+Depending on the HTTP/HTTPS-mode, the routes have to be configured in the frontend in file (default expects API to be started in HTTP):
 sdk_ec_frontend\ec_frontend\src\environments\environment.ts
 
 
@@ -46,6 +45,7 @@ dotnet dev-certs https -ep ${env:USERPROFILE}\.aspnet\https\aspnetapp.pfx -p You
 # 4. Trust the certificate (Windows/macOS)
 dotnet dev-certs https --trust
 ```
+
 
 **Start container with HTTPS:**
 
