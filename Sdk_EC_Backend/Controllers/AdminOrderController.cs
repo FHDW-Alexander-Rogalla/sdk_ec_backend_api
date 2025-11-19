@@ -226,7 +226,7 @@ public class AdminOrderController : ControllerBase
             }
 
             // Validate status (case-insensitive)
-            var validStatuses = new[] { "pending", "confirmed", "payment pending", "payment received", "delivered", "canceled" };
+            var validStatuses = new[] { "pending", "confirmed", "payment_pending", "payment_received", "delivered", "canceled" };
             if (!validStatuses.Contains(request.Status.ToLower()))
             {
                 return BadRequest(new { message = $"Invalid status. Valid statuses are: {string.Join(", ", validStatuses)}" });
