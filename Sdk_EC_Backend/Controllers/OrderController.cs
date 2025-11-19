@@ -82,11 +82,13 @@ public class OrderController : ControllerBase
             var products = productsResponse.Models.ToDictionary(p => p.Id, p => p);
 
             // 4. Create new order
+            var now = DateTime.UtcNow;
             var newOrder = new Order
             {
                 UserId = userId,
-                OrderDate = DateTime.UtcNow,
-                Status = "pending"
+                OrderDate = now,
+                Status = "pending",
+                UpdatedAt = now
             };
 
             var orderResponse = await _supabaseService.Client
@@ -282,7 +284,91 @@ public class OrderController : ControllerBase
     }
 
     /// <summary>
+    /// PATCH /api/order/{id}/cancel - Cancels an order (only if not delivered)
+    /// Users can only cancel their own orders and only if status is not 'delivered'
+    /// </summary>
+    [HttpPatch("{id:long}/cancel")]
+    public async Task<ActionResult<OrderDto>> CancelOrder(long id)
+    {
+        try
+        {
+            var userId = GetUserId();
+
+            // Get order and verify it belongs to user
+            var orderResponse = await _supabaseService.Client
+                .From<Order>()
+                .Filter("id", Postgrest.Constants.Operator.Equals, id.ToString())
+                .Filter("user_id", Postgrest.Constants.Operator.Equals, userId.ToString())
+                .Get();
+
+            if (orderResponse.Models.Count == 0)
+            {
+                return NotFound(new { message = "Order not found" });
+            }
+
+            var order = orderResponse.Models.First();
+
+            // Check if order can be cancelled
+            if (order.Status.Equals("delivered", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new { message = "Cannot cancel a delivered order" });
+            }
+
+            if (order.Status.Equals("canceled", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new { message = "Order is already canceled" });
+            }
+
+            // Update status to canceled
+            order.Status = "canceled";
+            order.UpdatedAt = DateTime.UtcNow;
+
+            var updateResponse = await _supabaseService.Client
+                .From<Order>()
+                .Update(order);
+
+            var updatedOrder = updateResponse.Models.First();
+
+            // Get order items
+            var itemsResponse = await _supabaseService.Client
+                .From<OrderItem>()
+                .Filter("order_id", Postgrest.Constants.Operator.Equals, updatedOrder.Id.ToString())
+                .Get();
+
+            var orderDto = new OrderDto
+            {
+                Id = updatedOrder.Id,
+                UserId = updatedOrder.UserId,
+                OrderDate = updatedOrder.OrderDate,
+                Status = updatedOrder.Status,
+                UpdatedAt = updatedOrder.UpdatedAt,
+                Items = itemsResponse.Models.Select(oi => new OrderItemDto
+                {
+                    Id = oi.Id,
+                    OrderId = oi.OrderId,
+                    ProductId = oi.ProductId,
+                    Quantity = oi.Quantity,
+                    PriceAtPurchase = oi.PriceAtPurchase
+                }).ToList()
+            };
+
+            return Ok(orderDto);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ERROR in CancelOrder: {ex.GetType().Name}: {ex.Message}");
+            Console.WriteLine($"StackTrace: {ex.StackTrace}");
+            return Problem(title: "Failed to cancel order", detail: ex.Message, statusCode: 500);
+        }
+    }
+
+    /// <summary>
     /// PATCH /api/order/{id}/status - Updates the status of an order
+    /// Deprecated: Users should use /cancel endpoint instead
     /// </summary>
     [HttpPatch("{id:long}/status")]
     public async Task<ActionResult<OrderDto>> UpdateOrderStatus(long id, [FromBody] UpdateOrderStatusRequest request)
@@ -305,6 +391,7 @@ public class OrderController : ControllerBase
 
             var order = orderResponse.Models.First();
             order.Status = request.Status;
+            order.UpdatedAt = DateTime.UtcNow;
 
             var updateResponse = await _supabaseService.Client
                 .From<Order>()
