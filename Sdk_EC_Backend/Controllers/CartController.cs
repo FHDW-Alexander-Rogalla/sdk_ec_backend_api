@@ -179,6 +179,18 @@ public class CartController : ControllerBase
                 cart = cartResponse.Models.First();
             }
 
+            // Check if product exists and is active
+            var productResponse = await _supabaseService.Client
+                .From<Product>()
+                .Filter("id", Postgrest.Constants.Operator.Equals, request.ProductId.ToString())
+                .Filter("is_active", Postgrest.Constants.Operator.Equals, "true")
+                .Get();
+
+            if (productResponse.Models.Count == 0)
+            {
+                return BadRequest(new { message = "Product is not available or has been deactivated" });
+            }
+
             // Check if item already exists in cart
             var existingItemResponse = await _supabaseService.Client
                 .From<CartItem>()

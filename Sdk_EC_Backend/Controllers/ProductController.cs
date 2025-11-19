@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sdk_EC_Backend.Models.Dtos;
 using Sdk_EC_Backend.Models;
@@ -22,7 +23,9 @@ public class ProductController : ControllerBase
     {
         try
         {
-            var response = await _supabaseService.Client.From<Product>().Get();
+            var response = await _supabaseService.Client.From<Product>()
+                .Filter("is_active", Constants.Operator.Equals, "true")
+                .Get();
             var dtos = response.Models.Select(p => new ProductDto
             {
                 Id = p.Id,
@@ -30,6 +33,7 @@ public class ProductController : ControllerBase
                 Description = p.Description,
                 Price = p.Price,
                 ImageUrl = p.ImageUrl,
+                IsActive = p.IsActive,
                 // StockQuantity = p.StockQuantity,
                 // Category = p.Category,
                 CreatedAt = p.CreatedAt,
@@ -50,6 +54,7 @@ public class ProductController : ControllerBase
         {
             var response = await _supabaseService.Client.From<Product>()
                                        .Filter("id", Constants.Operator.Equals, id.ToString())
+                                       .Filter("is_active", Constants.Operator.Equals, "true")
                                        .Get();
             var product = response.Models.FirstOrDefault();
             if (product == null)
@@ -62,6 +67,45 @@ public class ProductController : ControllerBase
                 Description = product.Description,
                 Price = product.Price,
                 ImageUrl = product.ImageUrl,
+                IsActive = product.IsActive,
+                // StockQuantity = product.StockQuantity,
+                // Category = product.Category,
+                CreatedAt = product.CreatedAt,
+                UpdatedAt = product.UpdatedAt
+            };
+            return Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            return Problem(title: "Failed to fetch product", detail: ex.Message, statusCode: 500);
+        }
+    }
+
+    /// <summary>
+    /// GET /api/product/{id}/any - Gets any product by ID (including inactive) for authenticated users
+    /// This endpoint is used for cart and order displays where users need to see products they already have
+    /// </summary>
+    [HttpGet("{id:long}/any")]
+    [Authorize]
+    public async Task<ActionResult<ProductDto>> GetByIdAny(long id)
+    {
+        try
+        {
+            var response = await _supabaseService.Client.From<Product>()
+                                       .Filter("id", Constants.Operator.Equals, id.ToString())
+                                       .Get();
+            var product = response.Models.FirstOrDefault();
+            if (product == null)
+                return NotFound();
+
+            var dto = new ProductDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                ImageUrl = product.ImageUrl,
+                IsActive = product.IsActive,
                 // StockQuantity = product.StockQuantity,
                 // Category = product.Category,
                 CreatedAt = product.CreatedAt,

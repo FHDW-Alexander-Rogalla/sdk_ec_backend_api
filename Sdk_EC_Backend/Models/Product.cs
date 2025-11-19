@@ -21,6 +21,9 @@ public class Product : BaseModel
     [Column("image_url")]
     public string? ImageUrl { get; set; }
 
+    [Column("is_active")]
+    public bool IsActive { get; set; } = true;
+
     // public int StockQuantity { get; set; }
     // public string? Category { get; set; }
     [Column("created_at")]

@@ -72,14 +72,30 @@ public class OrderController : ControllerBase
 
             var cartItems = cartItemsResponse.Models;
 
-            // 3. Get product prices for all items in cart
+            // 3. Get product prices for all items in cart (only active products)
             var productIds = cartItems.Select(ci => ci.ProductId).Distinct().ToList();
             var productsResponse = await _supabaseService.Client
                 .From<Product>()
                 .Filter("id", Postgrest.Constants.Operator.In, productIds)
+                .Filter("is_active", Postgrest.Constants.Operator.Equals, "true")
                 .Get();
 
             var products = productsResponse.Models.ToDictionary(p => p.Id, p => p);
+
+            // Check if all cart items have valid active products
+            var inactiveProductIds = cartItems
+                .Where(ci => !products.ContainsKey(ci.ProductId))
+                .Select(ci => ci.ProductId)
+                .ToList();
+
+            if (inactiveProductIds.Any())
+            {
+                return BadRequest(new 
+                { 
+                    message = "Some products in your cart are no longer available",
+                    inactiveProductIds = inactiveProductIds
+                });
+            }
 
             // 4. Create new order
             var now = DateTime.UtcNow;

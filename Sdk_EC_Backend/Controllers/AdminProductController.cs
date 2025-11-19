@@ -64,6 +64,50 @@ public class AdminProductController : ControllerBase
     }
 
     /// <summary>
+    /// GET /api/admin/product - Gets all products including inactive ones (Admin only)
+    /// </summary>
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetAllProducts()
+    {
+        try
+        {
+            // Check if user is admin
+            if (!await IsAdmin())
+            {
+                return Forbid();
+            }
+
+            var response = await _supabaseService.Client
+                .From<Product>()
+                .Get();
+
+            var dtos = response.Models.Select(p => new ProductDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Price = p.Price,
+                ImageUrl = p.ImageUrl,
+                IsActive = p.IsActive,
+                CreatedAt = p.CreatedAt,
+                UpdatedAt = p.UpdatedAt
+            });
+
+            return Ok(dtos);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ERROR in GetAllProducts: {ex.GetType().Name}: {ex.Message}");
+            Console.WriteLine($"StackTrace: {ex.StackTrace}");
+            return Problem(title: "Failed to fetch products", detail: ex.Message, statusCode: 500);
+        }
+    }
+
+    /// <summary>
     /// POST /api/admin/product - Creates a new product (Admin only)
     /// </summary>
     [HttpPost]
@@ -96,6 +140,7 @@ public class AdminProductController : ControllerBase
                 Description = request.Description,
                 Price = request.Price,
                 ImageUrl = request.ImageUrl,
+                IsActive = true,
                 CreatedAt = now,
                 UpdatedAt = now
             };
@@ -113,6 +158,7 @@ public class AdminProductController : ControllerBase
                 Description = product.Description,
                 Price = product.Price,
                 ImageUrl = product.ImageUrl,
+                IsActive = product.IsActive,
                 CreatedAt = product.CreatedAt,
                 UpdatedAt = product.UpdatedAt
             };
@@ -189,6 +235,7 @@ public class AdminProductController : ControllerBase
                 Description = updatedProduct.Description,
                 Price = updatedProduct.Price,
                 ImageUrl = updatedProduct.ImageUrl,
+                IsActive = updatedProduct.IsActive,
                 CreatedAt = updatedProduct.CreatedAt,
                 UpdatedAt = updatedProduct.UpdatedAt
             };
@@ -208,49 +255,109 @@ public class AdminProductController : ControllerBase
     }
 
     /// <summary>
-    /// DELETE /api/admin/product/{id} - Deletes a product (Admin only)
+    /// DELETE /api/admin/product/{id} - Soft-deletes a product by setting is_active to false (Admin only)
     /// </summary>
-    // [HttpDelete("{id:long}")]
-    // public async Task<ActionResult> DeleteProduct(long id)
-    // {
-    //     try
-    //     {
-    //         // Check if user is admin
-    //         if (!await IsAdmin())
-    //         {
-    //             return Forbid();
-    //         }
+    [HttpDelete("{id:long}")]
+    public async Task<ActionResult> DeleteProduct(long id)
+    {
+        try
+        {
+            // Check if user is admin
+            if (!await IsAdmin())
+            {
+                return Forbid();
+            }
 
-    //         // Check if product exists
-    //         var getResponse = await _supabaseService.Client
-    //             .From<Product>()
-    //             .Filter("id", Postgrest.Constants.Operator.Equals, id.ToString())
-    //             .Get();
+            // Check if product exists
+            var getResponse = await _supabaseService.Client
+                .From<Product>()
+                .Filter("id", Postgrest.Constants.Operator.Equals, id.ToString())
+                .Get();
 
-    //         if (getResponse.Models.Count == 0)
-    //         {
-    //             return NotFound(new { message = "Product not found" });
-    //         }
+            if (getResponse.Models.Count == 0)
+            {
+                return NotFound(new { message = "Product not found" });
+            }
 
-    //         // Delete product
-    //         await _supabaseService.Client
-    //             .From<Product>()
-    //             .Where(x => x.Id == id)
-    //             .Delete();
+            var product = getResponse.Models.First();
 
-    //         return NoContent();
-    //     }
-    //     catch (UnauthorizedAccessException ex)
-    //     {
-    //         return Unauthorized(new { message = ex.Message });
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         Console.WriteLine($"ERROR in DeleteProduct: {ex.GetType().Name}: {ex.Message}");
-    //         Console.WriteLine($"StackTrace: {ex.StackTrace}");
-    //         return Problem(title: "Failed to delete product", detail: ex.Message, statusCode: 500);
-    //     }
-    // }
+            // Soft-delete: Set is_active to false
+            product.IsActive = false;
+            product.UpdatedAt = DateTime.UtcNow;
+
+            await _supabaseService.Client
+                .From<Product>()
+                .Update(product);
+
+            return Ok(new { message = "Product deactivated successfully", productId = id });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ERROR in DeleteProduct: {ex.GetType().Name}: {ex.Message}");
+            Console.WriteLine($"StackTrace: {ex.StackTrace}");
+            return Problem(title: "Failed to delete product", detail: ex.Message, statusCode: 500);
+        }
+    }
+
+    /// <summary>
+    /// PATCH /api/admin/product/{id}/activate - Reactivates a product by setting is_active to true (Admin only)
+    /// </summary>
+    [HttpPatch("{id:long}/activate")]
+    public async Task<ActionResult> ActivateProduct(long id)
+    {
+        try
+        {
+            // Check if user is admin
+            if (!await IsAdmin())
+            {
+                return Forbid();
+            }
+
+            // Check if product exists
+            var getResponse = await _supabaseService.Client
+                .From<Product>()
+                .Filter("id", Postgrest.Constants.Operator.Equals, id.ToString())
+                .Get();
+
+            if (getResponse.Models.Count == 0)
+            {
+                return NotFound(new { message = "Product not found" });
+            }
+
+            var product = getResponse.Models.First();
+
+            // Check if already active
+            if (product.IsActive)
+            {
+                return BadRequest(new { message = "Product is already active" });
+            }
+
+            // Reactivate: Set is_active to true
+            product.IsActive = true;
+            product.UpdatedAt = DateTime.UtcNow;
+
+            await _supabaseService.Client
+                .From<Product>()
+                .Update(product);
+
+            return Ok(new { message = "Product reactivated successfully", productId = id });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ERROR in ActivateProduct: {ex.GetType().Name}: {ex.Message}");
+            Console.WriteLine($"StackTrace: {ex.StackTrace}");
+            return Problem(title: "Failed to activate product", detail: ex.Message, statusCode: 500);
+        }
+    }
+
 }
 
 // Request DTOs
