@@ -11,6 +11,12 @@ Depending on the HTTP/HTTPS-mode, the routes have to be configured in the fronte
 sdk_ec_frontend\ec_frontend\src\environments\environment.ts
 
 
+
+## Startup
+```Docker must be open to start the containers
+Open a terminal
+```
+
 #### HTTP Mode (Default)
 
 ```powershell
