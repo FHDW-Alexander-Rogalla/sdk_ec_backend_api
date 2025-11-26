@@ -1,8 +1,10 @@
 # SDK EC Backend API
 Backend API for the E-Commerce Software Development Kit project, built with .NET 9.0 and ASP.NET Core.
 
-
-
+## System Requirements
+- **.NET SDK**: 9.0 or higher ([Download](https://dotnet.microsoft.com/download))
+- **Docker**: Latest version ([Download](https://www.docker.com/products/docker-desktop/))
+- **PowerShell**: 5.1 or higher (Windows) or PowerShell Core 7+ (cross-platform)
 
 ### IMPORTANT
 Depending on the HTTP/HTTPS-mode, the routes have to be configured in the frontend in file (default expects API to be started in HTTP):
